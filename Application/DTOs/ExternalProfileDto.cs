@@ -1,6 +1,6 @@
 using System;
 
-namespace Advisor360.Application.DTOs
+namespace hackatonxp.Application.DTOs
 {
     public class ExternalProfileDto
     {

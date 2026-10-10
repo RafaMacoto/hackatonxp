@@ -1,15 +1,16 @@
-using Advisor360.Domain.Entities;
+using hackatonxp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Advisor360.Infrastructure.Data
+namespace hackatonxp.Infrastructure.Data
 {
-    public class Advisor360DbContext : DbContext
+    public class HackatonXpDbContext : DbContext
     {
-        public Advisor360DbContext(DbContextOptions<Advisor360DbContext> options) : base(options)
+        public HackatonXpDbContext(DbContextOptions<HackatonXpDbContext> options) : base(options)
         {
         }
 
         public DbSet<Client> Clients => Set<Client>();
+        public DbSet<Advisor> Advisors => Set<Advisor>();
         public DbSet<PortfolioPosition> PortfolioPositions => Set<PortfolioPosition>();
         public DbSet<Interaction> Interactions => Set<Interaction>();
         public DbSet<TaskItem> Tasks => Set<TaskItem>();
@@ -29,6 +30,17 @@ namespace Advisor360.Infrastructure.Data
                 b.HasMany(x => x.Interactions).WithOne(i => i.Client).HasForeignKey(i => i.ClientId);
                 b.HasMany(x => x.Tasks).WithOne(t => t.Client).HasForeignKey(t => t.ClientId);
                 b.HasMany(x => x.ImportantDates).WithOne(d => d.Client).HasForeignKey(d => d.ClientId);
+            });
+
+            modelBuilder.Entity<Advisor>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).IsRequired();
+                b.Property(x => x.Email).IsRequired();
+                b.HasIndex(x => x.Email).IsUnique();
+                b.Property(x => x.PasswordHash).IsRequired();
+                b.Property(x => x.IsActive).HasDefaultValue(true);
+                b.Property(x => x.CreatedAt).IsRequired();
             });
 
             modelBuilder.Entity<PortfolioPosition>(b =>

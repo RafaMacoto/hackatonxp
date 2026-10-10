@@ -1,24 +1,24 @@
 using System;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
-using Advisor360.Application.Services;
-using Advisor360.Infrastructure.Data;
-using Advisor360.Infrastructure.Repositories;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Services;
+using hackatonxp.Infrastructure.Data;
+using hackatonxp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Advisor360.Tests
+namespace hackatonxp.UnitTests
 {
     public class ClientCreationTests
     {
-        private Advisor360DbContext CreateDb()
+        private HackatonXpDbContext CreateDb()
         {
-            var options = new DbContextOptionsBuilder<Advisor360DbContext>()
+            var options = new DbContextOptionsBuilder<HackatonXpDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
-            var db = new Advisor360DbContext(options);
+            var db = new HackatonXpDbContext(options);
             db.Database.EnsureCreated();
-            Advisor360.Infrastructure.Seed.DataSeeder.EnsureSeedData(db);
+            hackatonxp.Infrastructure.Seed.DataSeeder.EnsureSeedData(db);
             return db;
         }
 
@@ -27,9 +27,9 @@ namespace Advisor360.Tests
         {
             using var db = CreateDb();
             var repo = new ClientRepository(db);
-            var cpfService = new Advisor360.Application.Services.CpfService();
-            var overviewService = new Advisor360.Application.Services.ClientOverviewService(repo);
-            var writeService = new Advisor360.Application.Services.ClientWriteService(repo, cpfService, overviewService);
+            var cpfService = new hackatonxp.Application.Services.CpfService();
+            var overviewService = new hackatonxp.Application.Services.ClientOverviewService(repo);
+            var writeService = new hackatonxp.Application.Services.ClientWriteService(repo, cpfService, overviewService);
 
             var dto = new ClientCreateDto
             {

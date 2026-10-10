@@ -2,11 +2,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
-using Advisor360.Application.Interfaces;
-using Advisor360.Infrastructure.Repositories;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Interfaces;
+using hackatonxp.Infrastructure.Repositories;
 
-namespace Advisor360.Application.Services
+namespace hackatonxp.Application.Services
 {
     public class ClientOverviewService : IClientOverviewService
     {
@@ -20,8 +20,7 @@ namespace Advisor360.Application.Services
         public async Task<ClientOverviewDto?> GetOverviewAsync(Guid clientId, CancellationToken cancellationToken = default)
         {
             var client = await _clientRepository.GetByIdWithRelatedAsync(clientId, cancellationToken);
-            if (client is null)
-                return null;
+            if (client is null) return null;
 
             var positions = client.Positions.Select(p => new PositionDto
             {
@@ -41,7 +40,7 @@ namespace Advisor360.Application.Services
                 .ToList();
 
             var openTasks = client.Tasks
-                .Where(t => t.Status != Domain.Entities.TaskItemStatus.Completed)
+                .Where(t => t.Status != hackatonxp.Domain.Entities.TaskItemStatus.Completed)
                 .OrderBy(t => t.DueDate)
                 .Select(t => new TaskDto { Id = t.Id, Title = t.Title, DueDate = t.DueDate, Status = t.Status.ToString() })
                 .ToList();

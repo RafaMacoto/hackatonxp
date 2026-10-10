@@ -1,7 +1,7 @@
-using Advisor360.Application.Services;
+using hackatonxp.Application.Services;
 using Xunit;
 
-namespace Advisor360.Tests
+namespace hackatonxp.UnitTests
 {
     public class CpfServiceTests
     {

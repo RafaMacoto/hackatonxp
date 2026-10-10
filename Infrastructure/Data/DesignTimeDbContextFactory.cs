@@ -1,29 +1,26 @@
 using System;
+using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace Advisor360.Infrastructure.Data
+namespace hackatonxp.Infrastructure.Data
 {
-    // Design-time factory to support 'dotnet ef' tooling without embedding credentials.
-    public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Advisor360DbContext>
+    // Design-time factory to support 'dotnet ef' tooling. Requires ConnectionStrings__Postgres to be set in environment.
+    public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HackatonXpDbContext>
     {
-        public Advisor360DbContext CreateDbContext(string[] args)
+        public HackatonXpDbContext CreateDbContext(string[] args)
         {
-            var builder = new DbContextOptionsBuilder<Advisor360DbContext>();
+            var builder = new DbContextOptionsBuilder<HackatonXpDbContext>();
 
-            // Try to read connection string from environment variable; tooling should set it when needed.
             var cs = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres");
             if (string.IsNullOrEmpty(cs))
             {
-                // Fallback: use an in-memory provider for design-time when Postgres is not configured.
-                builder.UseInMemoryDatabase("Advisor360_DesignTime");
-            }
-            else
-            {
-                builder.UseNpgsql(cs);
+                throw new InvalidOperationException("ConnectionStrings__Postgres is not set. Set the environment variable to enable design-time DbContext creation for PostgreSQL.");
             }
 
-            return new Advisor360DbContext(builder.Options);
+            builder.UseNpgsql(cs);
+
+            return new HackatonXpDbContext(builder.Options);
         }
     }
 }

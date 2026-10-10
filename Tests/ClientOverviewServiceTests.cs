@@ -1,24 +1,24 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Advisor360.Application.Services;
-using Advisor360.Infrastructure.Data;
-using Advisor360.Infrastructure.Repositories;
+using hackatonxp.Application.Services;
+using hackatonxp.Infrastructure.Data;
+using hackatonxp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Advisor360.Tests
+namespace hackatonxp.UnitTests
 {
     public class ClientOverviewServiceTests
     {
-        private Advisor360DbContext CreateInMemoryDb()
+        private HackatonXpDbContext CreateInMemoryDb()
         {
-            var options = new DbContextOptionsBuilder<Advisor360DbContext>()
+            var options = new DbContextOptionsBuilder<HackatonXpDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
-            var db = new Advisor360DbContext(options);
+            var db = new HackatonXpDbContext(options);
             db.Database.EnsureCreated();
-            Advisor360.Infrastructure.Seed.DataSeeder.EnsureSeedData(db);
+            hackatonxp.Infrastructure.Seed.DataSeeder.EnsureSeedData(db);
             return db;
         }
 

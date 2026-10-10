@@ -1,14 +1,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
-using Advisor360.Application.Interfaces;
-using Advisor360.Domain.Entities;
-using Advisor360.Infrastructure.Repositories;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Interfaces;
+using hackatonxp.Domain.Entities;
+using hackatonxp.Infrastructure.Repositories;
 
-namespace Advisor360.Application.Services
+namespace hackatonxp.Application.Services
 {
-    public class ClientWriteService : IClientWriteService
+    public class ClientWriteService
     {
         private readonly IClientRepository _repository;
         private readonly ICpfService _cpfService;
@@ -21,21 +21,21 @@ namespace Advisor360.Application.Services
             _overviewService = overviewService;
         }
 
-        public async Task<ClientOverviewDto?> CreateAsync(ClientCreateDto dto, CancellationToken cancellationToken = default)
+        public async Task<ClientDto> CreateAsync(ClientCreateDto dto, CancellationToken cancellationToken = default)
         {
-            var normalized = _cpfService.Normalize(dto.Cpf);
-            if (!_cpfService.IsValid(normalized))
-                throw new ArgumentException("CPF inválido", nameof(dto.Cpf));
+            var cpf = _cpfService.Normalize(dto.Cpf);
+            if (!_cpfService.IsValid(cpf))
+                throw new ArgumentException("CPF inválido");
 
-            var exists = await _repository.GetByCpfAsync(normalized, cancellationToken);
-            if (exists is not null)
+            var existing = await _repository.GetByCpfAsync(cpf, cancellationToken);
+            if (existing is not null)
                 throw new InvalidOperationException("CPF já cadastrado");
 
             var client = new Client
             {
                 Id = Guid.NewGuid(),
-                Cpf = normalized,
                 Name = dto.Name,
+                Cpf = cpf,
                 Email = dto.Email,
                 Phone = dto.Phone,
                 BirthDate = dto.BirthDate,
@@ -44,7 +44,7 @@ namespace Advisor360.Application.Services
 
             await _repository.AddAsync(client, cancellationToken);
 
-            return await _overviewService.GetOverviewAsync(client.Id, cancellationToken);
+            return new ClientDto { Id = client.Id, Name = client.Name, Email = client.Email, Phone = client.Phone, BirthDate = client.BirthDate };
         }
     }
 }

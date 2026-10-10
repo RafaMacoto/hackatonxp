@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Advisor360.Domain.Entities
+namespace hackatonxp.Domain.Entities
 {
     public enum InvestorProfile
     {

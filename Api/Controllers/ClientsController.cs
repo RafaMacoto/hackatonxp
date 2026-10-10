@@ -1,40 +1,129 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.Interfaces;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Advisor360.Api.Controllers
+namespace hackatonxp.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/clients")]
     public class ClientsController : ControllerBase
     {
+        private readonly IClientService _clientService;
         private readonly IClientOverviewService _overviewService;
 
-        public ClientsController(IClientOverviewService overviewService)
+        public ClientsController(
+            IClientService clientService,
+            IClientOverviewService overviewService)
         {
+            _clientService = clientService;
             _overviewService = overviewService;
         }
 
-        /// <summary>
-        /// Obtém a visão consolidada de um cliente por id.
-        /// </summary>
-        /// <param name="id">Identificador do cliente (GUID).</param>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAll(
+            CancellationToken cancellationToken)
+        {
+            var clients = await _clientService.GetAllAsync(cancellationToken);
+            return Ok(clients);
+        }
+
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetById(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            var client = await _clientService.GetByIdAsync(
+                id, cancellationToken);
+
+            return client is null ? NotFound() : Ok(client);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Create(
+            [FromBody] ClientCreateDto dto,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var client = await _clientService.CreateAsync(
+                    dto, cancellationToken);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = client.Id },
+                    client);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Update(
+            Guid id,
+            [FromBody] ClientUpdateDto dto,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var client = await _clientService.UpdateAsync(
+                    id, dto, cancellationToken);
+
+                return client is null ? NotFound() : Ok(client);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            var deleted = await _clientService.DeleteAsync(
+                id, cancellationToken);
+
+            return deleted ? NoContent() : NotFound();
+        }
+
         [HttpGet("{id:guid}/overview")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetOverview([FromRoute] Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOverview(
+            Guid id,
+            CancellationToken cancellationToken)
         {
-            if (id == Guid.Empty)
-                return BadRequest();
+            var overview = await _overviewService.GetOverviewAsync(
+                id, cancellationToken);
 
-            var overview = await _overviewService.GetOverviewAsync(id, cancellationToken);
-            if (overview is null)
-                return NotFound();
-
-            return Ok(overview);
+            return overview is null ? NotFound() : Ok(overview);
         }
     }
 }

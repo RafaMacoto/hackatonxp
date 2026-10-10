@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
+using hackatonxp.Application.DTOs;
 
-namespace Advisor360.Application.Interfaces
+namespace hackatonxp.Application.Interfaces
 {
     public interface IExternalProfileProvider
     {

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
-using Advisor360.Application.Interfaces;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Interfaces;
 
-namespace Advisor360.Application.Services
+namespace hackatonxp.Application.Services
 {
     public class ClientProfileEnrichmentService
     {

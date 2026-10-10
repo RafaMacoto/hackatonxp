@@ -1,22 +1,44 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Domain.Entities;
-using Advisor360.Infrastructure.Data;
+using hackatonxp.Application.Interfaces;
+using hackatonxp.Domain.Entities;
+using hackatonxp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Advisor360.Infrastructure.Repositories
+namespace hackatonxp.Infrastructure.Repositories
 {
     public class ClientRepository : IClientRepository
     {
-        private readonly Advisor360DbContext _db;
+        private readonly HackatonXpDbContext _db;
 
-        public ClientRepository(Advisor360DbContext db)
+        public ClientRepository(HackatonXpDbContext db)
         {
             _db = db;
         }
 
-        public async Task<Client?> GetByIdWithRelatedAsync(Guid id, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<Client>> GetAllAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return await _db.Clients
+                .AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<Client?> GetByIdAsync(
+            Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            return await _db.Clients
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        }
+
+        public async Task<Client?> GetByIdWithRelatedAsync(
+            Guid id,
+            CancellationToken cancellationToken = default)
         {
             return await _db.Clients
                 .AsNoTracking()
@@ -27,16 +49,38 @@ namespace Advisor360.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         }
 
-        public async Task<Client?> GetByCpfAsync(string normalizedCpf, CancellationToken cancellationToken = default)
+        public async Task<Client?> GetByCpfAsync(
+            string normalizedCpf,
+            CancellationToken cancellationToken = default)
         {
             return await _db.Clients
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Cpf == normalizedCpf, cancellationToken);
+                .FirstOrDefaultAsync(
+                    c => c.Cpf == normalizedCpf,
+                    cancellationToken);
         }
 
-        public async Task AddAsync(Client client, CancellationToken cancellationToken = default)
+        public async Task AddAsync(
+            Client client,
+            CancellationToken cancellationToken = default)
         {
             await _db.Clients.AddAsync(client, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task UpdateAsync(
+            Client client,
+            CancellationToken cancellationToken = default)
+        {
+            _db.Clients.Update(client);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task DeleteAsync(
+            Client client,
+            CancellationToken cancellationToken = default)
+        {
+            _db.Clients.Remove(client);
             await _db.SaveChangesAsync(cancellationToken);
         }
     }

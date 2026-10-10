@@ -1,4 +1,4 @@
-namespace Advisor360.Infrastructure.Http
+namespace hackatonxp.Infrastructure.Http
 {
     public class ExternalApiOptions
     {

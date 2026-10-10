@@ -1,7 +1,7 @@
 using System.Linq;
-using Advisor360.Application.Interfaces;
+using hackatonxp.Application.Interfaces;
 
-namespace Advisor360.Application.Services
+namespace hackatonxp.Application.Services
 {
     public class CpfService : ICpfService
     {

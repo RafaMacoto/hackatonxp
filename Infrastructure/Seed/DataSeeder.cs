@@ -1,13 +1,13 @@
 using System;
 using System.Linq;
-using Advisor360.Domain.Entities;
-using Advisor360.Infrastructure.Data;
+using hackatonxp.Domain.Entities;
+using hackatonxp.Infrastructure.Data;
 
-namespace Advisor360.Infrastructure.Seed
+namespace hackatonxp.Infrastructure.Seed
 {
     public static class DataSeeder
     {
-        public static void EnsureSeedData(Advisor360DbContext db)
+        public static void EnsureSeedData(HackatonXpDbContext db)
         {
             if (db.Clients.Any())
                 return;

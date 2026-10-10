@@ -1,4 +1,4 @@
-namespace Advisor360.Application.Interfaces
+namespace hackatonxp.Application.Interfaces
 {
     public interface ICpfService
     {

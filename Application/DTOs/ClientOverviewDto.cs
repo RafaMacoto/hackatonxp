@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-namespace Advisor360.Application.DTOs
+namespace hackatonxp.Application.DTOs
 {
     public class ClientOverviewDto
     {
@@ -21,7 +22,6 @@ namespace Advisor360.Application.DTOs
         public string? Phone { get; set; }
         public DateTime? BirthDate { get; set; }
         public string? InvestorProfile { get; set; }
-        // Nota: o CPF não é incluído aqui por questões de privacidade; exponha apenas quando necessário
     }
 
     public class ClientCreateDto
@@ -64,5 +64,21 @@ namespace Advisor360.Application.DTOs
         public DateTime Date { get; set; }
         public string Category { get; set; } = null!;
         public string? Notes { get; set; }
+    }
+
+    public class ClientUpdateDto
+    {
+        [Required]
+        [StringLength(150, MinimumLength = 2)]
+        public string Name { get; set; } = string.Empty;
+
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        public string? Phone { get; set; }
+
+        public DateTime? BirthDate { get; set; }
+
+        public string Cpf { get; set; } = string.Empty;
     }
 }

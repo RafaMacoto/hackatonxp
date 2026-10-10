@@ -2,10 +2,10 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Advisor360.Application.DTOs;
-using Advisor360.Application.Interfaces;
+using hackatonxp.Application.DTOs;
+using hackatonxp.Application.Interfaces;
 
-namespace Advisor360.Infrastructure.Adapters
+namespace hackatonxp.Infrastructure.Adapters
 {
     // Implementação de demonstração — não registrada automaticamente. Serve como exemplo de adaptador HTTP tipado.
     public class DemoExternalProfileProvider : IExternalProfileProvider
