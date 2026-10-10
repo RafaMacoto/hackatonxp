@@ -8,16 +8,47 @@ using hackatonxp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Add services to the container.
+// Controllers e Swagger
 builder.Services.AddControllers();
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DbContext: use InMemory by default to simplify local execution in the hackathon.
-// If a PostgreSQL connection string is provided in configuration under "ConnectionStrings:Postgres",
-// the app will use Npgsql instead.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "hackatonxp API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Cole seu token JWT no campo abaixo."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// Configuração do banco de dados
 var postgres = builder.Configuration.GetConnectionString("Postgres");
 var allowInMemory = builder.Configuration["HACKATONXP_ALLOW_INMEMORY"] ?? Environment.GetEnvironmentVariable("HACKATONXP_ALLOW_INMEMORY");
 if (!string.IsNullOrWhiteSpace(postgres))
