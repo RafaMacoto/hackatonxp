@@ -1,0 +1,6 @@
+@hackatonxp_HostAddress = http://localhost:5018
+
+GET {{hackatonxp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

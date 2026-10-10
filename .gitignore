@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.env
+docker-compose.override.yml
+*.db
+*.sqlite
+*.user
+*.suo
+coverage/
+TestResults/
