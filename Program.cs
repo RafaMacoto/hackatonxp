@@ -10,134 +10,178 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Controllers e Swagger
 builder.Services.AddControllers();
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "hackatonxp API",
-        Version = "v1"
-    });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Cole seu token JWT no campo abaixo."
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
-
 // Configuração do banco de dados
 var postgres = builder.Configuration.GetConnectionString("Postgres");
-var allowInMemory = builder.Configuration["HACKATONXP_ALLOW_INMEMORY"] ?? Environment.GetEnvironmentVariable("HACKATONXP_ALLOW_INMEMORY");
+
+var allowInMemory =
+    builder.Configuration["HACKATONXP_ALLOW_INMEMORY"]
+    ?? Environment.GetEnvironmentVariable("HACKATONXP_ALLOW_INMEMORY");
+
 if (!string.IsNullOrWhiteSpace(postgres))
 {
-    builder.Services.AddDbContext<hackatonxp.Infrastructure.Data.HackatonXpDbContext>(options =>
-        options.UseNpgsql(postgres));
+    builder.Services.AddDbContext<
+        hackatonxp.Infrastructure.Data.HackatonXpDbContext>(
+        options => options.UseNpgsql(postgres));
 }
-else if (string.Equals(allowInMemory, "true", StringComparison.OrdinalIgnoreCase))
+else if (string.Equals(
+    allowInMemory,
+    "true",
+    StringComparison.OrdinalIgnoreCase))
 {
-    // Explicit fallback for development when developer opts-in via env var
-    builder.Services.AddDbContext<hackatonxp.Infrastructure.Data.HackatonXpDbContext>(options =>
-        options.UseInMemoryDatabase("HackatonXp_InMemory"));
+    builder.Services.AddDbContext<
+        hackatonxp.Infrastructure.Data.HackatonXpDbContext>(
+        options => options.UseInMemoryDatabase("HackatonXp_InMemory"));
 }
 else
 {
-    // Fail fast with clear guidance if Postgres is not configured and in-memory is not allowed
-    throw new InvalidOperationException("PostgreSQL connection string not configured. Set ConnectionStrings__Postgres or set HACKATONXP_ALLOW_INMEMORY=true for local ephemeral execution. See README.md.");
+    throw new InvalidOperationException(
+        "Connection string do PostgreSQL não configurada. " +
+        "Configure ConnectionStrings__Postgres ou " +
+        "HACKATONXP_ALLOW_INMEMORY=true para desenvolvimento local.");
 }
 
-// Application dependencies
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IClientRepository, hackatonxp.Infrastructure.Repositories.ClientRepository>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IClientService, hackatonxp.Application.Services.ClientService>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IClientOverviewService, hackatonxp.Application.Services.ClientOverviewService>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.ICpfService, hackatonxp.Application.Services.CpfService>();
+// Serviços de clientes
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IClientRepository,
+    hackatonxp.Infrastructure.Repositories.ClientRepository>();
 
-// Advisor auth services
-builder.Services.AddScoped<hackatonxp.Infrastructure.Repositories.IAdvisorRepository, hackatonxp.Infrastructure.Repositories.AdvisorRepository>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IPasswordHasher, hackatonxp.Infrastructure.Services.PasswordHasherService>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IAdvisorService, hackatonxp.Application.Services.AdvisorService>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IAuthService, hackatonxp.Application.Services.AuthService>();
-builder.Services.AddScoped<hackatonxp.Application.Interfaces.IJwtService, hackatonxp.Infrastructure.Services.JwtService>();
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IClientService,
+    hackatonxp.Application.Services.ClientService>();
 
-// Configure JWT authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("JWT_SECRET");
-if (!string.IsNullOrEmpty(jwtSecret))
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IClientOverviewService,
+    hackatonxp.Application.Services.ClientOverviewService>();
+
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.ICpfService,
+    hackatonxp.Application.Services.CpfService>();
+
+// Integração com a Pluggy
+builder.Services.AddHttpClient<IPluggyService, PluggyService>(client =>
 {
-    var key = Encoding.UTF8.GetBytes(jwtSecret);
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    }).AddJwtBearer(options =>
+    client.BaseAddress = new Uri("https://api.pluggy.ai/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// Serviços de autenticação e assessores
+builder.Services.AddScoped<
+    hackatonxp.Infrastructure.Repositories.IAdvisorRepository,
+    hackatonxp.Infrastructure.Repositories.AdvisorRepository>();
+
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IPasswordHasher,
+    hackatonxp.Infrastructure.Services.PasswordHasherService>();
+
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IAdvisorService,
+    hackatonxp.Application.Services.AdvisorService>();
+
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IAuthService,
+    hackatonxp.Application.Services.AuthService>();
+
+builder.Services.AddScoped<
+    hackatonxp.Application.Interfaces.IJwtService,
+    hackatonxp.Infrastructure.Services.JwtService>();
+
+// Configuração da autenticação JWT
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET");
+
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "Chave JWT não configurada. Defina JWT_SECRET " +
+        "ou Jwt:Secret antes de iniciar a API.");
+}
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "hackatonxp";
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? "hackatonxp_clients";
+
+var signingKey = new SymmetricSecurityKey(
+    Encoding.UTF8.GetBytes(jwtSecret));
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+
             ValidateAudience = true,
+            ValidAudience = jwtAudience,
+
             ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+
             ValidateLifetime = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "hackatonxp",
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "hackatonxp_clients",
-            IssuerSigningKey = new SymmetricSecurityKey(key)
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
-}
-else
-{
-    // No JWT secret configured; warn developer. Authentication endpoints will throw if attempted.
-    Console.WriteLine("Warning: JWT secret not configured. Set Jwt:Secret or JWT_SECRET to enable authentication.");
-}
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Ensure seed data
+// Inicialização e seed de dados
 using (var scope = app.Services.CreateScope())
 {
-    // Seed only when using in-memory provider (explicit opt-in). For PostgreSQL, apply migrations via EF CLI and then run seed manually if desired.
-    var db = scope.ServiceProvider.GetRequiredService<hackatonxp.Infrastructure.Data.HackatonXpDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<
+        hackatonxp.Infrastructure.Data.HackatonXpDbContext>();
+
     var provider = db.Database.ProviderName;
+
     if (provider?.Contains("InMemory") == true)
     {
         db.Database.EnsureCreated();
-        hackatonxp.Infrastructure.Seed.DataSeeder.EnsureSeedData(db);
+
+        hackatonxp.Infrastructure.Seed.DataSeeder
+            .EnsureSeedData(db);
     }
     else
     {
-        // Do not apply migrations or ensure database here; instruct developers to run migrations explicitly.
-        Console.WriteLine("PostgreSQL provider configured. Ensure migrations are applied with 'dotnet ef database update' before seeding.");
+        Console.WriteLine(
+            "PostgreSQL configurado. Execute 'dotnet ef database update' " +
+            "para aplicar as migrations antes de utilizar a aplicação.");
     }
 
-    // Optional: create initial advisor when environment variables are provided (controlled initialization)
-    var createAdmin = Environment.GetEnvironmentVariable("HACKATONXP_CREATE_ADMIN");
-    var adminEmail = Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_EMAIL");
-    var adminPassword = Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_PASSWORD");
-    if (string.Equals(createAdmin, "true", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
+    // Criação opcional do administrador inicial
+    var createAdmin =
+        Environment.GetEnvironmentVariable("HACKATONXP_CREATE_ADMIN");
+
+    var adminEmail =
+        Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_EMAIL");
+
+    var adminPassword =
+        Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_PASSWORD");
+
+    if (string.Equals(
+            createAdmin,
+            "true",
+            StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(adminEmail)
+        && !string.IsNullOrWhiteSpace(adminPassword))
     {
-        var advisorRepo = scope.ServiceProvider.GetRequiredService<hackatonxp.Infrastructure.Repositories.IAdvisorRepository>();
-        var hasher = scope.ServiceProvider.GetRequiredService<hackatonxp.Application.Interfaces.IPasswordHasher>();
-        var existing = advisorRepo.GetByEmailAsync(adminEmail).GetAwaiter().GetResult();
+        var advisorRepo = scope.ServiceProvider
+            .GetRequiredService<
+                hackatonxp.Infrastructure.Repositories.IAdvisorRepository>();
+
+        var hasher = scope.ServiceProvider
+            .GetRequiredService<
+                hackatonxp.Application.Interfaces.IPasswordHasher>();
+
+        var existing = advisorRepo
+            .GetByEmailAsync(adminEmail)
+            .GetAwaiter()
+            .GetResult();
+
         if (existing is null)
         {
             var advisor = new hackatonxp.Domain.Entities.Advisor
@@ -149,13 +193,19 @@ using (var scope = app.Services.CreateScope())
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-            advisorRepo.AddAsync(advisor).GetAwaiter().GetResult();
-            Console.WriteLine("Initial advisor created: " + adminEmail);
+
+            advisorRepo
+                .AddAsync(advisor)
+                .GetAwaiter()
+                .GetResult();
+
+            Console.WriteLine(
+                $"Administrador inicial criado: {adminEmail}");
         }
     }
 }
 
-// Configure the HTTP request pipeline.
+// Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

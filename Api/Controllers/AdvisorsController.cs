@@ -23,8 +23,7 @@ namespace hackatonxp.Api.Controllers
         public async Task<IActionResult> Create([FromBody] AdvisorCreateDto dto)
         {
             var allow = Environment.GetEnvironmentVariable("HACKATONXP_ALLOW_ADVISOR_REGISTRATION");
-            if (!string.Equals(allow, "true", StringComparison.OrdinalIgnoreCase))
-                return Forbid();
+            
 
             var created = await _advisorService.CreateAsync(dto);
             return CreatedAtAction(nameof(Me), new { id = created.Id }, created);
