@@ -1,5 +1,5 @@
-﻿using System.Net.Http.Json;
-using System.Text.Json;
+﻿
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using hackatonxp.Application.DTOs;
 using hackatonxp.Application.Interfaces;
@@ -24,13 +24,21 @@ namespace hackatonxp.Infrastructure.Services
         {
             _httpClient = httpClient;
 
-            _clientId = configuration["PLUGGY_CLIENT_ID"]
+            _clientId =
+                configuration["Pluggy:ClientId"]
+                ?? configuration["PLUGGY_CLIENT_ID"]
+                ?? Environment.GetEnvironmentVariable("PLUGGY_CLIENT_ID")
                 ?? throw new InvalidOperationException(
-                    "PLUGGY_CLIENT_ID não configurado.");
+                    "Credencial PLUGGY_CLIENT_ID não configurada. " +
+                    "Configure Pluggy:ClientId nos User Secrets.");
 
-            _clientSecret = configuration["PLUGGY_CLIENT_SECRET"]
+            _clientSecret =
+                configuration["Pluggy:ClientSecret"]
+                ?? configuration["PLUGGY_CLIENT_SECRET"]
+                ?? Environment.GetEnvironmentVariable("PLUGGY_CLIENT_SECRET")
                 ?? throw new InvalidOperationException(
-                    "PLUGGY_CLIENT_SECRET não configurado.");
+                    "Credencial PLUGGY_CLIENT_SECRET não configurada. " +
+                    "Configure Pluggy:ClientSecret nos User Secrets.");
         }
 
         private async Task<string> GetApiKeyAsync(
@@ -75,6 +83,7 @@ namespace hackatonxp.Infrastructure.Services
 
                 _apiKey = authResponse.ApiKey;
 
+                // Renova antes da expiração para reduzir falhas nas chamadas.
                 _apiKeyExpiresAt = DateTimeOffset.UtcNow
                     .AddHours(1)
                     .AddMinutes(55);

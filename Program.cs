@@ -1,17 +1,44 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using hackatonxp.Application.Interfaces;
 using hackatonxp.Infrastructure.Repositories;
 using hackatonxp.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers e Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "hackatonxp API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Cole seu token JWT aqui."
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
+
+
 
 // Configuração do banco de dados
 var postgres = builder.Configuration.GetConnectionString("Postgres");
@@ -67,7 +94,7 @@ builder.Services.AddHttpClient<IPluggyService, PluggyService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// Serviços de autenticação e assessores
+// Repositórios e serviços de assessores
 builder.Services.AddScoped<
     hackatonxp.Infrastructure.Repositories.IAdvisorRepository,
     hackatonxp.Infrastructure.Repositories.AdvisorRepository>();
@@ -88,15 +115,20 @@ builder.Services.AddScoped<
     hackatonxp.Application.Interfaces.IJwtService,
     hackatonxp.Infrastructure.Services.JwtService>();
 
-// Configuração da autenticação JWT
+// Configuração JWT
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? Environment.GetEnvironmentVariable("JWT_SECRET");
 
 if (string.IsNullOrWhiteSpace(jwtSecret))
 {
     throw new InvalidOperationException(
-        "Chave JWT não configurada. Defina JWT_SECRET " +
-        "ou Jwt:Secret antes de iniciar a API.");
+        "JWT não configurado. Defina a variável JWT_SECRET.");
+}
+
+if (Encoding.UTF8.GetByteCount(jwtSecret) < 32)
+{
+    throw new InvalidOperationException(
+        "JWT_SECRET deve ter pelo menos 32 bytes.");
 }
 
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "hackatonxp";
@@ -130,45 +162,38 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Inicialização e seed de dados
+// Inicialização do banco e assessor de demonstração
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<
         hackatonxp.Infrastructure.Data.HackatonXpDbContext>();
 
-    var provider = db.Database.ProviderName;
+    if (db.Database.IsRelational())
+    {
+        Console.WriteLine(
+            "Banco relacional configurado. Verificando migrations...");
 
-    if (provider?.Contains("InMemory") == true)
+        // Não cria tabelas automaticamente no PostgreSQL.
+        // Execute dotnet ef database update antes de iniciar, se necessário.
+    }
+    else
     {
         db.Database.EnsureCreated();
 
         hackatonxp.Infrastructure.Seed.DataSeeder
             .EnsureSeedData(db);
     }
-    else
+
+    if (app.Environment.IsDevelopment())
     {
-        Console.WriteLine(
-            "PostgreSQL configurado. Execute 'dotnet ef database update' " +
-            "para aplicar as migrations antes de utilizar a aplicação.");
-    }
+        var adminEmail =
+            Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_EMAIL")
+            ?? "admin@hackatonxp.local";
 
-    // Criação opcional do administrador inicial
-    var createAdmin =
-        Environment.GetEnvironmentVariable("HACKATONXP_CREATE_ADMIN");
+        var adminPassword =
+            Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_PASSWORD")
+            ?? "HackatonXp@123";
 
-    var adminEmail =
-        Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_EMAIL");
-
-    var adminPassword =
-        Environment.GetEnvironmentVariable("HACKATONXP_ADMIN_PASSWORD");
-
-    if (string.Equals(
-            createAdmin,
-            "true",
-            StringComparison.OrdinalIgnoreCase)
-        && !string.IsNullOrWhiteSpace(adminEmail)
-        && !string.IsNullOrWhiteSpace(adminPassword))
-    {
         var advisorRepo = scope.ServiceProvider
             .GetRequiredService<
                 hackatonxp.Infrastructure.Repositories.IAdvisorRepository>();
@@ -177,30 +202,36 @@ using (var scope = app.Services.CreateScope())
             .GetRequiredService<
                 hackatonxp.Application.Interfaces.IPasswordHasher>();
 
-        var existing = advisorRepo
-            .GetByEmailAsync(adminEmail)
-            .GetAwaiter()
-            .GetResult();
+        var existing = await advisorRepo.GetByEmailAsync(adminEmail);
 
         if (existing is null)
         {
             var advisor = new hackatonxp.Domain.Entities.Advisor
             {
                 Id = Guid.NewGuid(),
-                Name = "Initial Admin",
+                Name = "Assessor Demo",
                 Email = adminEmail,
                 PasswordHash = hasher.HashPassword(adminPassword),
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
 
-            advisorRepo
-                .AddAsync(advisor)
-                .GetAwaiter()
-                .GetResult();
+            await advisorRepo.AddAsync(advisor);
 
             Console.WriteLine(
-                $"Administrador inicial criado: {adminEmail}");
+                $"Assessor de demonstração criado: {adminEmail}");
+        }
+        else
+        {
+            // Mantém credenciais conhecidas no ambiente de desenvolvimento.
+            existing.Name = "Assessor Demo";
+            existing.PasswordHash = hasher.HashPassword(adminPassword);
+            existing.IsActive = true;
+
+            await db.SaveChangesAsync();
+
+            Console.WriteLine(
+                $"Assessor de demonstração atualizado: {adminEmail}");
         }
     }
 }
