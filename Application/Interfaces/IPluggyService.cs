@@ -1,5 +1,5 @@
-﻿using hackatonxp.Application.DTOs;
-using System.Text.Json;
+﻿
+using hackatonxp.Application.DTOs;
 
 namespace hackatonxp.Application.Interfaces
 {
@@ -10,11 +10,11 @@ namespace hackatonxp.Application.Interfaces
             CancellationToken cancellationToken = default);
 
         Task<List<LoanResponse>> GetClientLoansAsync(
-    string itemId,
-    CancellationToken cancellationToken = default);
+            string itemId,
+            CancellationToken cancellationToken = default);
+
+        Task<AccountResponseDto?> GetClientAccountAsync(
+            string itemId,
+            CancellationToken cancellationToken = default);
     }
-
-  
-
-
-    }
+}

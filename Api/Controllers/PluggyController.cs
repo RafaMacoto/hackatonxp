@@ -82,5 +82,38 @@ namespace hackatonxp.Api.Controllers
                     });
             }
         }
+        // Endpoint adicionado para consultar a conta
+        [HttpGet("account")]
+        public async Task<IActionResult> GetAccount(
+            [FromQuery] string itemId,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return BadRequest(new
+                {
+                    message = "O itemId é obrigatório."
+                });
+            }
+
+            try
+            {
+                var account =
+                    await _pluggyService.GetClientAccountAsync(
+                        itemId,
+                        cancellationToken);
+
+                return Ok(account);
+            }
+            catch (HttpRequestException)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    new
+                    {
+                        message = "Não foi possível consultar a conta na Pluggy."
+                    });
+            }
+        }
     }
 }
