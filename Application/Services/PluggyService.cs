@@ -83,7 +83,7 @@ namespace hackatonxp.Infrastructure.Services
 
                 _apiKey = authResponse.ApiKey;
 
-                // Renova antes da expiração para reduzir falhas nas chamadas.
+                // Renova a chave antes da expiração estimada.
                 _apiKeyExpiresAt = DateTimeOffset.UtcNow
                     .AddHours(1)
                     .AddMinutes(55);
@@ -96,7 +96,7 @@ namespace hackatonxp.Infrastructure.Services
             }
         }
 
-        public async Task<List<InvestmentResponse>> GetClientInvestmentsAsync(
+        public async Task<List<InvestmentResponseDto>> GetClientInvestmentsAsync(
             string itemId,
             CancellationToken cancellationToken = default)
         {
@@ -125,7 +125,39 @@ namespace hackatonxp.Infrastructure.Services
                 await response.Content.ReadFromJsonAsync<PluggyInvestmentsResponse>(
                     cancellationToken: cancellationToken);
 
-            return result?.Results ?? new List<InvestmentResponse>();
+            return result?.Results ?? new List<InvestmentResponseDto>();
+        }
+
+        public async Task<List<LoanResponse>> GetClientLoansAsync(
+            string itemId,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                throw new ArgumentException(
+                    "O itemId é obrigatório.",
+                    nameof(itemId));
+            }
+
+            var apiKey = await GetApiKeyAsync(cancellationToken);
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"loans?itemId={Uri.EscapeDataString(itemId)}");
+
+            request.Headers.Add("X-API-KEY", apiKey);
+
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            var result =
+                await response.Content.ReadFromJsonAsync<PluggyLoansResponse>(
+                    cancellationToken: cancellationToken);
+
+            return result?.Results ?? new List<LoanResponse>();
         }
 
         private sealed class PluggyAuthResponse
@@ -137,7 +169,13 @@ namespace hackatonxp.Infrastructure.Services
         private sealed class PluggyInvestmentsResponse
         {
             [JsonPropertyName("results")]
-            public List<InvestmentResponse> Results { get; set; } = new();
+            public List<InvestmentResponseDto> Results { get; set; } = new();
+        }
+
+        private sealed class PluggyLoansResponse
+        {
+            [JsonPropertyName("results")]
+            public List<LoanResponse> Results { get; set; } = new();
         }
     }
 }

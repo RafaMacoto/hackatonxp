@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace hackatonxp.Application.DTOs
 {
-    public class InvestmentResponse
+    public class InvestmentResponseDto
     {
         public string? Id { get; set; }
         public string? Number { get; set; }

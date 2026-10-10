@@ -1,4 +1,5 @@
-﻿using hackatonxp.Application.Interfaces;
+﻿
+using hackatonxp.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -45,6 +46,39 @@ namespace hackatonxp.Api.Controllers
                     new
                     {
                         message = "Não foi possível consultar os investimentos na Pluggy."
+                    });
+            }
+        }
+
+        [HttpGet("loans")]
+        public async Task<IActionResult> GetLoans(
+            [FromQuery] string itemId,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return BadRequest(new
+                {
+                    message = "O itemId é obrigatório."
+                });
+            }
+
+            try
+            {
+                var loans =
+                    await _pluggyService.GetClientLoansAsync(
+                        itemId,
+                        cancellationToken);
+
+                return Ok(loans);
+            }
+            catch (HttpRequestException)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    new
+                    {
+                        message = "Não foi possível consultar os empréstimos na Pluggy."
                     });
             }
         }
